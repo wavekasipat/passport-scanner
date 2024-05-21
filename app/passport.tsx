@@ -14,6 +14,7 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import React from "react";
+import * as Clipboard from "expo-clipboard";
 
 export default function PassportScreen() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -39,8 +40,11 @@ export default function PassportScreen() {
     const takePicture = async () => {
         if (cameraRef) {
             // Take the picture
-            const photo = await cameraRef.takePictureAsync();
+            const photo = await cameraRef.takePictureAsync({
+                base64: true,
+            });
             console.log(photo);
+            await Clipboard.setStringAsync(photo?.base64 || "");
         }
     };
 
@@ -73,7 +77,7 @@ const passportHeight = width * 0.9;
 const passportWidth = (passportHeight * 125) / 88;
 const pictureHeight = (passportHeight * 45) / 88;
 const pictureWidth = (passportWidth * 35) / 125;
-const mrzWidth = passportWidth
+const mrzWidth = passportWidth;
 const mrzHeight = (passportHeight * 23.2) / 88;
 
 const passportPositionTop = (height - passportWidth) / 2.5;
@@ -119,7 +123,7 @@ const styles = StyleSheet.create({
     },
     pictureOverlay: {
         position: "absolute",
-        left: passportPositionLeft+pictureMarginBottom,
+        left: passportPositionLeft + pictureMarginBottom,
         top: passportPositionTop + pictureMarginLeft,
         width: pictureHeight,
         height: pictureWidth,
