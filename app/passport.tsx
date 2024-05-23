@@ -16,9 +16,13 @@ import { ThemedView } from "@/components/ThemedView";
 import React from "react";
 import * as Clipboard from "expo-clipboard";
 
+const { width, height } = Dimensions.get("window");
+
 export default function PassportScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [cameraRef, setCameraRef] = React.useState<CameraView | null>(null);
+    const [base64, setBase64] = React.useState<string | null>(null);
+    const [loading, setLoading] = React.useState(false);
 
     if (!permission) {
         // Camera permissions are still loading.
@@ -28,23 +32,44 @@ export default function PassportScreen() {
     if (!permission.granted) {
         // Camera permissions are not granted yet.
         return (
-            <View style={styles.container}>
+            <ThemedView style={styles.container}>
                 <ThemedText>
                     We need your permission to show the camera
                 </ThemedText>
                 <Button onPress={requestPermission} title="grant permission" />
-            </View>
+            </ThemedView>
+        );
+    }
+
+    if (base64) {
+        return (
+            <ThemedView style={styles.container}>
+                <ThemedText>
+                    Base64:
+                </ThemedText>
+                <ThemedText>
+                    {base64.slice(0, 200)}
+                </ThemedText>
+                <Button onPress={()=>{
+                    console.log("copied");
+                    Clipboard.setStringAsync(base64);
+                }} title="Copy" />
+            </ThemedView>
         );
     }
 
     const takePicture = async () => {
         if (cameraRef) {
+            setLoading(true);
+
             // Take the picture
             const photo = await cameraRef.takePictureAsync({
                 base64: true,
             });
             console.log(photo);
-            await Clipboard.setStringAsync(photo?.base64 || "");
+            setBase64(photo?.base64 || "");
+
+            setLoading(false);
         }
     };
 
@@ -61,18 +86,19 @@ export default function PassportScreen() {
                 <View style={styles.passportOverlay} />
                 <View style={styles.pictureOverlay} />
                 <View style={styles.mrzOverlay} />
-                <TouchableOpacity
-                    style={styles.snapButtonContainer}
-                    onPress={takePicture}
-                >
-                    <View style={styles.snapButton}></View>
-                </TouchableOpacity>
+                {!loading && (
+                    <TouchableOpacity
+                        style={styles.snapButtonContainer}
+                        onPress={takePicture}
+                    >
+                        <View style={styles.snapButton}></View>
+                    </TouchableOpacity>
+                )}
             </CameraView>
         </ThemedView>
     );
 }
 
-const { width, height } = Dimensions.get("window");
 const passportHeight = width * 0.9;
 const passportWidth = (passportHeight * 125) / 88;
 const pictureHeight = (passportHeight * 45) / 88;
@@ -89,7 +115,9 @@ const pictureMarginBottom = (passportHeight * 25.2) / 88;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
     },
     camera: {
         flex: 1,
