@@ -8,13 +8,14 @@ import {
     Dimensions,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import React from "react";
 import * as Clipboard from "expo-clipboard";
+import * as MediaLibrary from "expo-media-library";
+import Toast from "react-native-root-toast";
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,6 +23,7 @@ export default function PassportScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [cameraRef, setCameraRef] = React.useState<CameraView | null>(null);
     const [base64, setBase64] = React.useState<string | null>(null);
+    const [localUri, setLocalUri] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(false);
 
     if (!permission) {
@@ -44,16 +46,43 @@ export default function PassportScreen() {
     if (base64) {
         return (
             <ThemedView style={styles.container}>
-                <ThemedText>
-                    Base64:
-                </ThemedText>
-                <ThemedText>
-                    {base64.slice(0, 200)}
-                </ThemedText>
-                <Button onPress={()=>{
-                    console.log("copied");
-                    Clipboard.setStringAsync(base64);
-                }} title="Copy" />
+                <ThemedText>Base64:</ThemedText>
+                <ThemedText>{base64.slice(0, 200)}</ThemedText>
+                <Button
+                    onPress={() => {
+                        console.log("copied");
+                        Clipboard.setStringAsync(base64);
+                    }}
+                    title="Copy"
+                />
+                <Button
+                    onPress={async () => {
+                        await MediaLibrary.saveToLibraryAsync(localUri || "");
+
+                        // Add a Toast on screen.
+                        let toast = Toast.show("File Saved", {
+                            duration: Toast.durations.LONG,
+                            position: Toast.positions.BOTTOM,
+                            shadow: true,
+                            animation: true,
+                            hideOnPress: true,
+                            delay: 0,
+                            onShow: () => {
+                                // calls on toast\`s appear animation start
+                            },
+                            onShown: () => {
+                                // calls on toast\`s appear animation end.
+                            },
+                            onHide: () => {
+                                // calls on toast\`s hide animation start.
+                            },
+                            onHidden: () => {
+                                // calls on toast\`s hide animation end.
+                            },
+                        });
+                    }}
+                    title="Save File"
+                />
             </ThemedView>
         );
     }
@@ -68,6 +97,7 @@ export default function PassportScreen() {
             });
             console.log(photo);
             setBase64(photo?.base64 || "");
+            setLocalUri(photo?.uri || "");
 
             setLoading(false);
         }
